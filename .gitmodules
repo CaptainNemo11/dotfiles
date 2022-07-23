@@ -1,0 +1,57 @@
+[submodule ".vim/vendor/start/YouCompleteMe"]
+	path = .vim/vendor/start/YouCompleteMe
+	url = https://github.com/ycm-core/YouCompleteMe.git
+[submodule ".vim/vendor/start/ack.vim"]
+	path = .vim/vendor/start/ack.vim
+	url = https://github.com/mileszs/ack.vim.git
+[submodule ".vim/vendor/start/auto-pairs"]
+	path = .vim/vendor/start/auto-pairs
+	url = https://github.com/jiangmiao/auto-pairs.git
+[submodule ".vim/vendor/start/ctrlp.vim"]
+	path = .vim/vendor/start/ctrlp.vim
+	url = https://github.com/ctrlpvim/ctrlp.vim.git
+[submodule ".vim/vendor/start/delimitMate"]
+	path = .vim/vendor/start/delimitMate
+	url = https://github.com/Raimondi/delimitMate.git
+[submodule ".vim/vendor/start/incsearch-easymotion.vim"]
+	path = .vim/vendor/start/incsearch-easymotion.vim
+	url = https://github.com/haya14busa/incsearch-easymotion.vim.git
+[submodule ".vim/vendor/start/incsearch.vim"]
+	path = .vim/vendor/start/incsearch.vim
+	url = https://github.com/haya14busa/incsearch.vim.git
+[submodule ".vim/vendor/start/lightline.vim"]
+	path = .vim/vendor/start/lightline.vim
+	url = https://github.com/itchyny/lightline.vim.git
+[submodule ".vim/vendor/start/nerdtree"]
+	path = .vim/vendor/start/nerdtree
+	url = https://github.com/preservim/nerdtree.git
+[submodule ".vim/vendor/start/vim-coffee-script"]
+	path = .vim/vendor/start/vim-coffee-script
+	url = https://github.com/kchmck/vim-coffee-script.git
+[submodule ".vim/vendor/start/vim-colors-solarized"]
+	path = .vim/vendor/start/vim-colors-solarized
+	url = https://github.com/altercation/vim-colors-solarized.git
+[submodule ".vim/vendor/start/vim-commentary"]
+	path = .vim/vendor/start/vim-commentary
+	url = https://github.com/tpope/vim-commentary.git
+[submodule ".vim/vendor/start/vim-easymotion"]
+	path = .vim/vendor/start/vim-easymotion
+	url = https://github.com/easymotion/vim-easymotion.git
+[submodule ".vim/vendor/start/vim-fugitive"]
+	path = .vim/vendor/start/vim-fugitive
+	url = https://github.com/tpope/vim-fugitive.git
+[submodule ".vim/vendor/start/vim-latex"]
+	path = .vim/vendor/start/vim-latex
+	url = https://github.com/vim-latex/vim-latex.git
+[submodule ".vim/vendor/start/vim-markdown"]
+	path = .vim/vendor/start/vim-markdown
+	url = https://github.com/tpope/vim-markdown.git
+[submodule ".vim/vendor/start/vim-racket"]
+	path = .vim/vendor/start/vim-racket
+	url = https://github.com/wlangstroth/vim-racket.git
+[submodule ".vim/pack/^Cndor/start/YouCompleteMe"]
+	path = .vim/pack/^Cndor/start/YouCompleteMe
+	url = https://github.com/ycm-core/YouCompleteMe.git
+[submodule ".vim/pack/^Cndor/start/ack.vim"]
+	path = .vim/pack/^Cndor/start/ack.vim
+	url = https://github.com/mileszs/ack.vim.git

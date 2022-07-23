@@ -1,0 +1,10 @@
+[wsl2]
+kernel=C:\\WSL\\vmlinux
+[experimental]
+autoMemoryReclaim=dropcache
+networkingMode=mirrored
+dnsTunneling=true
+firewall=true
+autoProxy=true
+sparseVhd=true
+
