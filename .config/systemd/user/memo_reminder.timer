@@ -1,0 +1,9 @@
+[Unit]
+Description=memo reminder timers
+
+[Timer]
+OnActiveSec=2h
+OnUnitActiveSec=2h
+
+[Install]
+WantedBy=timers.target

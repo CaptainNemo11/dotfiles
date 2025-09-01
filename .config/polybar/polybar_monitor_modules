@@ -1,0 +1,63 @@
+#!/bin/bash
+
+trap 'killall -q pactl udevadm dbus-monitor 2>/dev/null' EXIT INT TERM
+
+current_sink_port() {
+    #local default_sink sinks_data current_port
+	#default_sink=$(pactl get-default-sink)
+	#sinks_data=$(pactl list sinks)
+	#[[ "${sinks_data##*"Name: $default_sink"}" =~ Active[[:space:]]Port:[[:space:]]*([a-zA-Z0-9_-]+) ]] && current_port="${BASH_REMATCH[1]}"
+    current_port=$(pactl list sinks | awk '/^\s*Name: / {is_default = ($2 == "'$(pactl get-default-sink)'")} /^\s*Active Port: / && is_default {print $3}')
+	if [[ "$current_port" == "analog-output-speaker" ]]; then
+		polybar-msg action headset hook 0 >/dev/null 2>&1
+	else
+		polybar-msg action headset hook 1 >/dev/null 2>&1
+	fi
+
+}
+
+mic_is_muted() {
+	if [[ "$(pactl get-source-mute @DEFAULT_SOURCE@)" == "Mute: no" ]]; then
+		polybar-msg action mic-muted hook 0 >/dev/null 2>&1
+	else
+		polybar-msg action mic-muted hook 1 >/dev/null 2>&1
+	fi
+}
+
+current_sink_port
+mic_is_muted
+
+pactl subscribe 2>/dev/null | while read -r event; do
+    if [[ "$event" == *"card"* || "$event" == *"server"* ]];then
+        current_sink_port
+        mic_is_muted
+        continue
+    fi
+    if [[ "$event" == *"sink"* ]];then
+        current_sink_port
+    fi
+    if [[ "$event" == *"source"* ]];then
+        mic_is_muted
+    fi
+    
+done &
+
+udevadm monitor --subsystem-match=bluetooth --property 2>/dev/null | while read -r event; do
+    if [[ "$event" == "ACTION=add" || "$event" == "ACTION=remove" ]];then
+        polybar-msg action bluetooth hook 0 >/dev/null 2>&1
+    fi
+done &
+
+dbus-monitor --system "type='signal',sender='xyz.ljones.Asusd',path='/xyz/ljones',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'" 2>/dev/null | while read -r event; do
+    if [[ "$event" == *"PropertiesChanged"* ]]; then
+        polybar-msg action powerprofile hook 0 >/dev/null 2>&1
+    fi
+done &
+
+dbus-monitor --session "type='signal',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged',path='/org/mpris/MediaPlayer2'" 2>/dev/null | while read -r event; do
+    if [[ "$event" == *"PropertiesChanged"* ]];then
+        polybar-msg action mpris hook 0 >/dev/null 2>&1
+    fi
+done &
+
+wait

@@ -1,0 +1,8 @@
+button {
+    min-height: 0px;    /* Removes GTK default height */
+    min-width: 0px;     /* Removes GTK default width */
+    padding: 0px 0px;   /* Tighten internal space */
+    margin: 2px;        /* Reduce gap between buttons */
+    font-size: 10px;    /* Smaller text label */
+}
+/*#yad-dialog-window { background-color: #888888; } */

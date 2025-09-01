@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+adb kill-server >/dev/null
+if adb devices -l | grep -i "usb";then
+  adb tcpip 5555
+  dunstify  -a "system_status" "Wireless ADB(enable tcpip)" "switch to tcpip mode from usb mode" -i /usr/share/icons/breeze/devices/32/phone-apple-iphone-symbolic.svg 
+fi
+ANDROID_IP=$(ss -tnp 2>/dev/null | grep kdeconnect | grep ESTAB | grep -oP '\[::ffff:\K[\d.]+(?=\]:\d+\s+users)' | head -1)
+if [[ ! -z $ANDROID_IP ]];then
+  dunstify -a "system_status" "Wireless ADB(get ip)" "Get Android ip: $ANDROID_IP" -i /usr/share/icons/breeze/devices/32/phone-apple-iphone-symbolic.svg
+  if lsusb | grep Huawei | grep -q smartphone;then
+    adb tcpip 5555
+  fi
+  adb connect $ANDROID_IP
+  if adb devices | grep -q "$ANDROID_IP"; then
+    dunstify -a "system_status" "Wireless ADB(connected)" "connected to android phone" -i /usr/share/icons/breeze/devices/32/phone-apple-iphone-symbolic.svg
+  else
+    dunstify -a "system_status" "Wireless ADB" "failed to connect android phone, try again via USB" -u critical -i /usr/share/icons/breeze/devices/32/phone-apple-iphone-symbolic.svg
+    exit 1
+  fi
+else
+  dunstify -a "system_status" "Wireless ADB" "Get ip error" -u critical -i /usr/share/icons/breeze/devices/32/phone-apple-iphone-symbolic.svg
+  exit 1
+fi

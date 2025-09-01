@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+MEMOFILE="/tmp/.quickmemo"
+
+if [[ ! -s "$MEMOFILE" ]];then
+    exit 0
+fi
+
+while IFS= read -r line || [[ -n "$line" ]]; do
+    notify-send -a "system_status" "• $line" -i note
+done < "$MEMOFILE"

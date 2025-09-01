@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+
+CLASS="quickmemonote"
+FILE="/tmp/.quicknote"
+[[ -f "$FILE" ]] || touch "$FILE"
+
+LAST_LINE=$(( $(wc -l < "$FILE") ))
+
+CSS_FILE="/home/hl/.config/polybar/quicknote.css"
+
+MON_GEOM=$(bspc query -T -m focused | jq -r '.rectangle | "\(.width)x\(.height)+\(.x)+\(.y)"')
+
+WIDTH=$(echo $MON_GEOM | cut -dx -f1)
+X_OFFSET=$(echo $MON_GEOM | cut -d+ -f2)
+Y_OFFSET=$(echo $MON_GEOM | cut -d+ -f3)
+
+# Top-Right
+NOTE_W=700
+NOTE_H=400
+MARGIN=30
+
+FINAL_X=$((X_OFFSET + WIDTH - NOTE_W - MARGIN))
+FINAL_Y=$((Y_OFFSET + MARGIN))
+
+
+if pgrep -f "$CLASS" > /dev/null; then
+    ACTION=$(dunstify --action="kill_yad,Kill Existing Note" \
+                      "Quick Note already open" -a "system_status")
+    if [ "$ACTION" == "kill_yad" ]; then
+        pkill -f "$CLASS"
+        sleep 0.1
+    else
+        exit 0 
+    fi
+fi
+
+##################
+# escape: cancel #
+# ctrl-enter: ok #
+##################
+yad --text-info \
+    --class="$CLASS" \
+    --title="$CLASS" \
+    --filename="$FILE" \
+    --css="$CSS_FILE" \
+    --lang=markdown \
+    --line="$LAST_LINE" \
+    --editable \
+    --show-uri \
+    --in-place \
+    --undecorated \
+    --on-top \
+    --geometry="${NOTE_W}x${NOTE_H}+${FINAL_X}+${FINAL_Y}" \
+    --fontname="Monospace 12" \
+    --button="Save!gtk-ok:0" \
+    --button="Cancel!window-close:1" \
+    --button="Clear All!edit-clear:2"
+#    --no-buttons
+
+
+
+EXIT_STATUS=$?
+if [ "$EXIT_STATUS" -eq 0 ]; then
+    exit 0
+elif [ "$EXIT_STATUS" -eq 2 ]; then
+    true > "$FILE"
+fi

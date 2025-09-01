@@ -1,0 +1,8 @@
+[Unit]
+Description=memo reminder notifications
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/memo_reminder
+StandardOutput=null
+StandardError=null

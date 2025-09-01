@@ -1,0 +1,32 @@
+#!/bin/bash
+
+
+MONITOR_CONNECTED="DP-1-0"
+
+
+XRANDR_CMD_CONNECTED="xrandr --output eDP --primary --mode 2560x1440 --pos 536x2160 --rotate normal --output HDMI-A-0 --off --output DP-1-0 --mode 3840x2160 --pos 0x0 --rotate normal --output DP-1-1 --off"
+XRANDR_CMD_DISCONNECTED="xrandr --output eDP --primary --mode 2560x1440 --pos 536x2160 --rotate normal --output HDMI-A-0 --off --output DP-1-0 --off --output DP-1-1 --off"
+
+
+if [[ -z "$(pgrep Xorg)" ]]; then
+    exit 0
+fi
+
+
+#restart_bspwm() {
+#    if pgrep -x bspwm > /dev/null; then
+#        bspc wm -r
+##    else
+##        bspwm &
+#    fi
+#}
+
+
+if [[ ! -z "$(xrandr -q | grep "$MONITOR_CONNECTED connected")" ]]; then
+    eval "$XRANDR_CMD_CONNECTED"
+else
+    eval "$XRANDR_CMD_DISCONNECTED"
+fi
+
+#restart_bspwm
+

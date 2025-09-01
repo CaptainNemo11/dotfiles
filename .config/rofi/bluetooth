@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+
+LOCATION=3
+Y_AXIS=30
+X_AXIS=0
+THEME="network.rasi"
+RASI_DIR="$HOME/.config/rofi/${THEME}"
+WIDTH_FIX=1
+SELECTION_PREFIX="~"
+
+function get_bt_state() {
+	BT_POWER=$(bluetoothctl show | grep "Powered:" | awk '{print $2}')
+}
+
+function rofi_cmd() {
+	WIDTH=$(echo -e "$1" | awk '{print length}' | sort -n | tail -1)
+	((WIDTH += WIDTH_FIX))
+	((WIDTH = WIDTH / 2))
+	rofi -dmenu -i -location "$LOCATION" -yoffset "$Y_AXIS" -xoffset "$X_AXIS" \
+    -theme "$RASI_DIR" -theme-str 'window{width: '"$WIDTH"'em;}textbox-prompt-colon{str:"'"$PROMPT"'bluetooth:";}'
+}
+
+function main() {
+	get_bt_state
+	
+	OPTIONS=""
+	
+	# Bluetooth toggle
+	if [[ "$BT_POWER" == "yes" ]]; then
+		OPTIONS="${SELECTION_PREFIX}Bluetooth Off\n"
+		
+		# Get paired devices
+		while read -r device; do
+			MAC=$(echo "$device" | awk '{print $2}')
+			NAME=$(echo "$device" | cut -d' ' -f3-)
+			
+            mac_info=$(bluetoothctl info "$MAC")
+            OPTIONS="${OPTIONS}$(echo "$mac_info" | awk -F ': ' '
+                  /Name:/ {
+                      name = substr($0, index($0, $2)) 
+                  }
+                  /Connected:/ {
+                      conn = $2
+                  }
+                  /Battery Percentage:/ { 
+                      if (match($0, /\((.*)\)/, arr)) {
+                          batt = arr[1] "%"
+                      } else {
+                          batt = $3 "%"  # Fallback if no parentheses exist (just raw number)
+                      }
+                  }
+                  END {
+                      if (name) {
+                          if (conn == "yes") {
+                              print "󰂱 " name " ( " (batt ? batt : "unknown") ")"
+                          } else {
+                              print "  " name 
+                          }
+                      }
+                  } ')\n"
+		done < <(bluetoothctl devices Paired)
+	else
+		OPTIONS="${SELECTION_PREFIX}Bluetooth On"
+	fi
+	
+	OPTIONS="${OPTIONS%\\n}"  # Remove trailing newline
+	
+	SELECTION=$(echo -e "$OPTIONS" | rofi_cmd "$OPTIONS")
+
+	if [[ -z "$SELECTION" ]];then
+        exit
+    fi
+    
+	# Handle selection
+	case "$SELECTION" in
+		"${SELECTION_PREFIX}Bluetooth On")
+			bluetoothctl power on
+			;;
+		"${SELECTION_PREFIX}Bluetooth Off")
+			bluetoothctl power off
+			;;
+		*)
+			DEVICE_NAME=$(echo "$SELECTION" | sed 's/^󰂱 //;s/^  //;s/ ( .*$//')
+			MAC=$(bluetoothctl devices Paired | grep "$DEVICE_NAME" | awk '{print $2}')
+			
+			if [[ "$SELECTION" == "󰂱"* ]]; then
+				bluetoothctl disconnect "$MAC"
+			else
+				bluetoothctl connect "$MAC"
+			fi
+			;;
+	esac
+}
+
+main
+

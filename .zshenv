@@ -1,0 +1,1 @@
+. "$HOME/.shell/env.sh"

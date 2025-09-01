@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+playerctl -a pause > /dev/null 2>&1
+
+dunstctl set-paused true
+
+i3lock -n -c 000000ff -k  \
+       --inside-color=000000  --ring-color=ffffff --line-uses-inside \
+       --insidever-color=000000 --ringver-color=008000  --insidewrong-color=000000 \
+       --time-str=%H:%M --time-color=ffffff --date-color=ffffff \
+       --verif-color=ffffff --wrong-color=ffffff --modif-color=ffffff \
+       --time-size=128 --radius=200
+
+dunstctl set-paused false

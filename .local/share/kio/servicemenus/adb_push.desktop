@@ -1,0 +1,12 @@
+[Desktop Entry]
+Actions=1;
+Icon=xsi-emblem-synchronizing-symbolic;
+MimeType=all/all;
+ServiceTypes=KonqPopupMenu/Plugin
+Type=Service
+X-KDE-Priority=TopLevel
+X-KDE-StartupNotify=false
+[Desktop Action 1]
+Exec=~/.local/bin/adb_push_sync.sh %F
+Icon=xsi-emblem-synchronizing-symbolic
+Name=Adbsync Pdf
