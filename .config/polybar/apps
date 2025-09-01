@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+n_columns=4
+n_lines=3
+apps="Chrome\0icon\x1fgoogle-chrome"
+apps="$apps\nEmacs\0icon\x1femacs"
+apps="$apps\nVS Code\0icon\x1fvisual-studio-code"
+apps="$apps\nDolphin\0icon\x1forg.kde.dolphin"
+apps="$apps\nKitty\0icon\x1fkitty"
+apps="$apps\nGoldendict\0icon\x1fgoldendict"
+
+apps="$apps\nWireless Adb\0icon\x1ffolder-android-symbolic"
+apps="$apps\nScrcpy\0icon\x1fscrcpy"
+#apps="$apps\nFirefox(scrcpy)\0icon\x1fchrome-ai-mode"
+apps="$apps\nFirefox\0icon\x1ffirefox"
+
+apps="$apps\nBtop\0icon\x1fbtop"
+apps="$apps\nAnki\0icon\x1fanki"
+
+apps="$apps\nApps\0icon\x1fapplication-menu"
+
+selected=$(echo -e "$apps" | rofi -dmenu -i -location 1 -yoffset 30 -xoffset 0 -theme ~/.config/rofi/network.rasi -show-icons -theme-str '
+  *{bg: #ffffff; bg-alt: #ffffff; fg: #000000; fg-alt:#000000;}
+  window { width: 600px; border: 2px; border-color: #000000; }
+  mainbox { children: [ listview ]; } 
+  listview { columns: '"${n_columns}"'; lines: '"${n_lines}"'; fixed-columns: true; flow: horizontal; spacing: 20px; padding: 20px; }
+  element { orientation: vertical; padding: 10px; }
+  element-icon { size: 64px; horizontal-align: 0.5; }
+  element-text { horizontal-align: 0.5; font: "Sans 10"; }
+')
+
+case "$selected" in
+"Chrome")
+	google-chrome-stable &
+	;;
+"Emacs")
+	if emacsclient -e 't' >/dev/null 2>&1; then
+		emacsclient -c -n &
+	else
+		emacs &
+	fi
+	;;
+"VS Code")
+	code &
+	;;
+"Kitty")
+	kitty &
+	;;
+"Goldendict")
+	goldendict &
+	;;
+"Dolphin")
+	dolphin &
+	;;
+"Wireless Adb")
+	connect_phone_adb
+	;;
+"Scrcpy")
+	if ! adb devices | grep -q "device$"; then
+		~/.local/bin/connect_phone_adb
+	fi
+	scrcpy --tcpip --shortcut-mod=ralt &
+	;;
+"Firefox(scrcpy)")
+	if ! adb devices | grep -q "device$"; then
+		~/.local/bin/connect_phone_adb
+	fi
+	scrcpy --tcpip --shortcut-mod=ralt --new-display=/240 -x --start-app=org.mozilla.firefox --keep-active --keyboard=uhid &
+	;;
+"Firefox")
+    firefox &
+    ;;
+"Btop")
+	kitty btop &
+	;;
+"Anki")
+	anki &
+	;;
+"Apps")
+	sh -c "sleep 0.1 && rofi -show drun"
+	;;
+
+esac
