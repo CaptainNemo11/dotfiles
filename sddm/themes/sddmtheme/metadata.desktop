@@ -1,0 +1,12 @@
+[SddmGreeterTheme]
+Name = sddmtheme
+Comment= sddmtheme
+Description=sddmtheme
+Type = sddm-theme
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=sddmtheme
+Theme-API=2.0
+QtVersion=6
+Version=0.1
+
