@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+
+FILE="/tmp/.quickmemo"
+ICON=""
+CLEAR=" **CLEAR ALL**"
+clear_opt="${CLEAR}"
+
+
+touch "$FILE"
+list_raw=$(cat "$FILE")
+
+if [[ -n "$list_raw" ]]; then
+	# sed ensures the icon is only prepended to lines that have content
+	list_formatted=$(echo "$list_raw" | sed "/./ s/^/$ICON /")
+else
+	list_formatted=""
+fi
+
+# Don't show clear option if list is empty
+[[ -z "$list_raw" ]] && clear_opt=""
+
+
+##########################
+# return: add            #
+# control+return: delete #
+# shift+return: edit     #
+##########################
+
+function rofi_cmd() {
+	# local input_data=$(cat)
+	# echo -e "$input_data" |
+	rofi -dmenu -i \
+		-location 3 -yoffset 30 -xoffset -10 \
+		-kb-accept-alt "" \
+		-kb-accept-entry "" \
+		-kb-accept-custom "Return" \
+		-kb-custom-2 "Control+Return" \
+		-kb-custom-1 "Shift+Return" \
+		-theme "~/.config/rofi/network.rasi" \
+		-theme-str "*{bg: #ffffff; bg-alt: #ffffff; fg: #000000; fg-alt:#000000;} \
+        window { width: 22em; border: 2px; border-color: #000000; } \
+        textbox-prompt-colon { str: \"  :\"; } \
+        element selected { background-color: #888888; } 
+        element-text selected { background-color: #e0e0e0; text-color: #000000; }" \
+		-no-fixed-num-lines \
+		"$@"
+}
+
+function save_and_refresh() {
+    echo -e "$list_raw" | sed '/^$/d' >|"$FILE"
+    exec ~/.config/polybar/quickmemo
+}
+
+selection=$(printf "%b\n%s" "$clear_opt" "$list_formatted" | sed '/^$/d' | rofi_cmd)
+exit_code=$?
+
+# Selection Logic
+if [[ -z "$selection" ]]; then
+	exit
+elif [[ "$selection" == "$CLEAR" ]]; then
+    if [[ $exit_code -eq 11 ]]; then
+	    list_raw=""
+        save_and_refresh
+    fi
+    exit
+fi
+if [[ $exit_code -eq 10 ]]; then
+	edit_selection="${selection#$ICON }"
+	selection=$(echo "$ICON $edit_selection" | rofi_cmd -filter "$edit_selection")
+
+	if [[ ! -z "$selection" ]]; then
+		list_raw=$(echo "$list_raw" | grep -vFx "$edit_selection")
+		modified_selection="${selection#$ICON }"
+	fi
+elif [[ $exit_code -eq 11 ]]; then
+	clean_selection="${selection#$ICON }"
+	list_raw=$(echo "$list_raw" | grep -vFx "$clean_selection")
+elif [[ $exit_code -eq 0 ]]; then
+	modified_selection="${selection#$ICON }"
+fi
+
+if ! echo "$list_raw" | grep -qFx "${modified_selection}"; then
+	if [[ -n "$list_raw" ]]; then
+		list_raw="${list_raw}\n${modified_selection}"
+	else
+		list_raw="$modified_selection"
+	fi
+fi
+
+save_and_refresh

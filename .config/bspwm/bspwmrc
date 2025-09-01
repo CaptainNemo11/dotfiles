@@ -1,0 +1,84 @@
+#! /bin/sh
+
+hsetroot -solid "#ffffff"
+picom & 
+pgrep -x sxhkd > /dev/null || sxhkd &
+
+#bspc monitor eDP -d 1 2 3 4 5
+#bspc monitor DP-1-0 -d 1 2 3 4 5
+for monitor in $(xrandr --listmonitors | awk 'NR>1 {print $NF}');do
+    bspc monitor "$monitor" -d 1 2 3 4 5
+done
+
+~/.config/polybar/launch.sh
+killall -q polybar_monitor_modules
+~/.config/polybar/polybar_monitor_modules &
+
+dbus-update-activation-environment --systemd DISPLAY XAUTHORITY XDG_CURRENT_DESKTOP=bspwm
+/usr/lib/polkit-kde-authentication-agent-1 & 
+
+
+xss-lock  --ignore-sleep -- i3lock -n -c ffffffff -k  --inside-color=ffffff  --ring-color=000000 --line-uses-inside --insidever-color=ffffff --ringver-color=008000  --insidewrong-color=ffffff &
+
+XDG_MENU_PREFIX=arch- kbuildsycoca6 --noincremental
+
+
+pgrep -x fcitx5 > /dev/null || fcitx5 -d &
+pgrep -x dunst > /dev/null || dunst &
+pgrep -x playerctld > /dev/null || playerctld &
+pgrep -x blueman-applet > /dev/null || blueman-applet &
+pgrep -x greenclip > /dev/null || greenclip daemon &
+#nm-applet --indicator &
+killall -q kdeconnectd
+kdeconnectd &
+#kdeconnect-indicator &
+
+killall -q touchegg
+touchegg &
+
+
+#killall -q xcape
+#setxkbmap -option "ctrl:swapcaps" 
+##pgrep -x xcape > /dev/null ||
+#xcape -e 'Control_L=Escape'
+#sleep 1 
+#xmodmap -e 'keycode 62 = Shift_Lock'
+#setxkbmap -option caps:shiftlock
+#using keyd
+
+
+bspc config border_width         2
+bspc config window_gap          0
+bspc config normal_border_color "#303030"
+bspc config focused_border_color "#ffffff"
+
+bspc config split_ratio          0.5
+bspc config borderless_monocle   true
+bspc config gapless_monocle      true
+
+bspc config focus_follows_pointer true
+bspc config pointer_follows_focus false
+bspc config pointer_follows_monitor true
+
+bspc config remove_disabled_monitors true
+bspc config remove_unplugged_monitors true
+
+bspc config pointer_action1 resize_corner
+bspc config pointer_action3 move
+
+bspc rule -a dolphin state=floating  follow=on
+bspc rule -a quickmemonote state=floating follow=on sticky=on border=off
+
+bspc rule -a zoom state=floating follow=off focus=off border=off 
+
+## Force the drawing toolbar to float and stay on top
+#bspc rule -a zoom title="annotate_toolbar" state=floating border=off
+## Prevent the huge transparent drawing layer from tiling
+#bspc rule -a zoom title="^Annotation.*" manage=off
+## Ignore the "AS" frames that contain the drawing data
+#bspc rule -a zoom title="^AS.*" manage=off
+#annotate_toolbar
+
+
+#bspc rule -a Readest state=tiled
+

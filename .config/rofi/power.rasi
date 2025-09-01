@@ -1,0 +1,176 @@
+
+/*****----- Configuration -----*****/
+configuration {
+    show-icons:                 false;
+}
+
+/*****----- Global Properties -----*****/
+* {
+    font: "JetBrains Mono Nerd Font 10";
+    background:     #1E2127FF;
+    background-alt: #282B31FF;
+    foreground:     #FFFFFFFF;
+    selected:       #61AFEFFF;
+    active:         #98C379FF;
+    urgent:         #E06C75FF;
+}
+/*****----- Main Window -----*****/
+window {
+    /* properties for window widget */
+    transparency:                "real";
+    location:                    center;
+    anchor:                      center;
+    fullscreen:                  false;
+    width:                       800px;
+    x-offset:                    0px;
+    y-offset:                    0px;
+   // height: 360px;
+    /* properties for all widgets */
+    enabled:                     true;
+    margin:                      0px;
+    padding:                     0px;
+    border:                      0px solid;
+    border-radius:               0px;
+    border-color:                @selected;
+    cursor:                      "default";
+    background-color:            @background;
+}
+
+/*****----- Main Box -----*****/
+mainbox {
+    enabled:                     true;
+    spacing:                     15px;
+    margin:                      0px;
+    padding:                     30px;
+    border:                      0px solid;
+    border-radius:               0px;
+    border-color:                @selected;
+    background-color:            transparent;
+    children:                    [ "listview","textbox-custom"];
+}
+
+/*****----- Inputbar -----*****/
+//inputbar {
+//    enabled:                     true;
+//    spacing:                     15px;
+//    margin:                      0px;
+//    padding:                     0px;
+//    border:                      0px;
+//    border-radius:               0px;
+//    border-color:                @selected;
+//    background-color:            transparent;
+//    text-color:                  @foreground;
+//    children:                    [ "textbox-prompt-colon", "prompt"];
+//}
+//
+//dummy {
+//    background-color:            transparent;
+//}
+//
+//textbox-prompt-colon {
+//    enabled:                     true;
+//    expand:                      false;
+//    str:                         "";
+//    padding:                     12px 16px;
+//    border-radius:               100%;
+//    background-color:            @urgent;
+//    text-color:                  @background;
+//}
+//prompt {
+//    enabled:                     true;
+//    padding:                     12px;
+//    border-radius:               100%;
+//    background-color:            @active;
+//    text-color:                  @background;
+//}
+//
+///*****----- Message -----*****/
+//message {
+//    enabled:                     true;
+//    margin:                      0px;
+//    padding:                     12px;
+//    border:                      0px solid;
+//    border-radius:               100%;
+//    border-color:                @selected;
+//    background-color:            @background-alt;
+//    text-color:                  @foreground;
+//}
+textbox-custom {
+    background-color:            inherit;
+    text-color:                  @foreground;
+    vertical-align:              0;
+    horizontal-align:            0.5;
+    placeholder-color:           @foreground;
+    blink:                       true;
+    markup:                      true;
+    content: "shutdown[X] logout[E] reboot[R] suspend[S} lock[L]";
+    expand: false;
+}
+//error-message {
+//    padding:                     12px;
+//    border:                      0px solid;
+//    border-radius:               0px;
+//    border-color:                @selected;
+//    background-color:            @background;
+//    text-color:                  @foreground;
+//}
+
+/*****----- Listview -----*****/
+listview {
+    enabled:                     true;
+    columns:                     5;
+    lines:                       1;
+    cycle:                       true;
+    dynamic:                     true;
+    scrollbar:                   false;
+    layout:                      vertical;
+    reverse:                     false;
+    fixed-height:                true;
+    fixed-columns:               true;
+    
+    spacing:                     15px;
+    margin:                      0px;
+    padding:                     0px;
+    border:                      0px solid;
+    border-radius:               0px;
+    border-color:                @selected;
+    background-color:            transparent;
+    text-color:                  @foreground;
+    cursor:                      "default";
+}
+
+/*****----- Elements -----*****/
+element {
+    enabled:                     true;
+    spacing:                     0px;
+    margin:                      0px;
+    padding:                     40px 10px;
+    border:                      0px solid;
+    border-radius:               100%;
+    border-color:                @selected;
+    background-color:            @background-alt;
+    text-color:                  @foreground;
+    cursor:                      pointer;
+}
+element-text {
+    font:                        "feather bold 32";
+    background-color:            transparent;
+    text-color:                  inherit;
+    cursor:                      inherit;
+    vertical-align:              0.5;
+    horizontal-align:            0.5;
+}
+element selected.normal {
+    background-color:            var(selected);
+    text-color:                  var(background);
+}
+
+configuration {
+    kb-select-1: "x";
+	kb-select-2: "e";
+	kb-select-3: "r";
+	kb-select-4: "s";
+	kb-select-5: "l";
+    me-accept-entry: "MousePrimary";
+    me-select-entry: "";
+}

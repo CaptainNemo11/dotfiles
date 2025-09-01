@@ -1,0 +1,29 @@
+#!/usr/bin/sh
+
+case "$@" in
+    "󰐥")
+    systemctl poweroff > /dev/null 2>&1
+    exit 0
+    ;;
+    "󰍃")
+    bspc quit > /dev/null 2>&1
+    exit 0
+    ;;
+    "󰜉")
+    systemctl reboot > /dev/null 2>&1
+    exit 0
+    ;;
+    "󰤄")
+    systemctl suspend > /dev/null 2>&1
+    exit 0
+    ;;
+    "󰌾")
+    loginctl lock-session > /dev/null 2>&1
+    exit 0
+    ;;
+esac
+echo "󰐥"
+echo "󰍃"
+echo "󰜉"
+echo "󰤄"
+echo "󰌾"

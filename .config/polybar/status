@@ -1,0 +1,296 @@
+#!/bin/bash
+date="  $(date "+%H:%M %a, %-d %b")"
+desktop="  $(bspc query -D -m focused -d focused --names)"
+xwindow=" $(xdotool getwindowfocus getwindowname)"
+
+if [[ ! -z $(xset -q | grep "Caps Lock:   on") ]]; then
+	capslock="󰪛 "
+else
+	capslock=""
+fi
+#
+#if [[ ! -z $(xset -q | grep "Shift Lock:  on") ]]; then
+#	shiftlock="󰘶 "
+#else
+#	shiftlock=""
+#fi
+
+powerprofile="$(/home/hl/.config/polybar/powerprofile) "
+battery_level=" $(cat /sys/class/power_supply/BAT0/capacity)% "
+temperature="$(awk '{printf "%.1f°C", $1/1000}' "/sys/class/thermal/thermal_zone0/temp" 2>/dev/null)"
+
+volume_value="$(pamixer --get-volume)%"
+if [[ ! -z $(pamixer --get-mute | grep "true") ]]; then
+	volume="  <s>${volume_value}</s>"
+else
+	volume="  ${volume_value}"
+fi
+
+if [[ ! -z $(pactl list sources | grep -A 10 $(pactl get-default-source) | grep "Mute: yes") ]]; then
+	mic=" "
+else
+	mic=" "
+fi
+
+brightness="󰃠 $(brightnessctl -m | cut -d, -f4)"
+
+if [[ ! -z $(pactl list short | grep bluez) ]]; then
+	headset=" "
+else
+	headset=""
+fi
+
+node_flags=""; for f in marked:󰙒  sticky:󰶘 locked:󰐃 private:󰒘; do bspc query -N -n focused.${f%:*} >/dev/null && node_flags+="${f#*:} "; done; node_flags=${node_flags% }
+
+global_cpu_usage="$({ head -n1 /proc/stat; sleep 0.1; head -n1 /proc/stat; } | awk '/^cpu /{u=$2-u;s=$4-s;i=$5-i;w=$6-w}END{ total=u+s+i+w; if(total>0) printf "  cpu %.1f%%", 100*(u+s+w)/total; else print "  cpu 0.0%"}')"
+cpu_freq="$(awk '/MHz/ {sum+=$4; count++} END {printf "󰓅 %dMHz", sum/count}' /proc/cpuinfo)"
+memory_usage="  mem $(free | awk '/Mem:/ {printf "%.2f%", $3/$2 * 100}')"
+disk_home="  home: $(df -h /dev/nvme0n1p3 | awk 'NR==2 {print $5}')"
+disk_boot="  fs: $(df -h /dev/nvme0n1p2 | awk 'NR==2 {print $5}')"
+
+if [[ ! -z "$1" ]]; then
+	dunstify "$date $desktop $capslock" -a "system_status" -t 4000 \
+		-h string:bgcolor:#000000 -h string:fgcolor:#FFFFFF -h string:frcolor:#FFFFFF \
+		-h string:x-dunst-stack-tag:sys_status \
+		"<u>$xwindow</u> $node_flags\
+      \r$volume $headset$mic $brightness $powerprofile$battery_level $temperature\
+      \r$memory_usage  $global_cpu_usage\
+      \r$disk_home $disk_boot"
+	exit 0
+fi
+
+battery_stats="($(cat /sys/class/power_supply/BAT0/status))"
+
+
+
+#cpu_usage=$(mpstat -P ALL 1 1 | awk '/^[0-9]/ && $3 != "all" && $3 != "CPU" {print $3 " " 100 - $NF}' | awk '{printf " core(%d): %d%%\t", $1, $2} NR%4==0 {print ""}')
+
+cpu_stat1=$(grep 'cpu' /proc/stat)
+sleep 0.1
+cpu_stat2=$(grep 'cpu' /proc/stat)
+cpu_usage=$(awk -v s1="$cpu_stat1" -v s2="$cpu_stat2" '
+BEGIN {
+    n1 = split(s1, lines1, "\n");
+    n2 = split(s2, lines2, "\n");
+    
+    for (i = 2; i <= n1; i++) {
+            split(lines1[i], a);
+            split(lines2[i], b);
+            
+            idle1 = a[5]; total1 = 0;
+            for (j=2; j<=11; j++) total1 += a[j];
+            idle2 = b[5]; total2 = 0;
+            for (j=2; j<=11; j++) total2 += b[j];
+            
+            diff_total = total2 - total1;
+            diff_idle = idle2 - idle1;
+            usage = (diff_total > 0) ? (100 * (diff_total - diff_idle) / diff_total) : 0;
+
+            printf " %x:%3d%%  ", i-2, usage;
+            if ((i-1) % 4 == 0) print "";
+    }
+}')
+
+IGPU_DIR="/sys/class/drm/card1/device"
+
+igpu_mem() {
+	used=$(cat "$IGPU_DIR/mem_info_$1_used")
+	total=$(cat "$IGPU_DIR/mem_info_$1_total")
+	printf "$((used * 100 / total))"
+}
+
+igpu_usage=" (i):$(cat $IGPU_DIR/gpu_busy_percent)%   󰍛(vram) $(igpu_mem vram)% 󰍛(gtt) $(igpu_mem gtt)%"
+egpu_usage=$(nvidia-smi --query-gpu=utilization.gpu,utilization.memory,temperature.gpu --format=csv,noheader,nounits | awk -F', ' '{print " (e):"$1"%   󰍛(vram) "$2"%  "$3"°C"}')
+egpu_usage+=" $(supergfxctl -g | awk '{print toupper(substr($1,1,1))}')/$(supergfxctl -S | awk '{print toupper(substr($1,1,1))}')"
+
+#bluetooth_devices=$(bluetoothctl devices Connected | grep Device | awk 'NF {print $2, substr($0, index($0,$3))}' | while read -r MAC NAME; do
+#    BATTERY_DECIMAL=$(bluetoothctl info "$MAC" | awk -F'[()]' '/Battery Percentage:/ {print $2}')
+#    if [[ -z "$BATTERY_DECIMAL" ]]; then
+#        BATTERY_DECIMAL="N/A"
+#    fi
+#    echo "󰂱 $NAME ($BATTERY_DECIMAL%)"
+#done)
+#[[ -z "$bluetooth_devices" ]] && unset bluetooth_devices
+
+connected_macs=$(bluetoothctl devices Connected | awk '{print $2}')
+
+if [[ -n "$connected_macs" ]]; then
+	bluetooth_devices=$(echo "$connected_macs" | xargs -I {} -n 1 bluetoothctl info {} | awk '
+        /Name:/ {
+            name = substr($0, index($0, $2)) 
+        }
+        /Battery Percentage:/ { 
+            match($0, /\((.*)\)/, arr);
+            print "󰂱 " name " (" arr[1] "%)" 
+        }')
+else
+	unset bluetooth_devices
+fi
+
+dev_interface=$(ip route | grep '^default' | awk '{print $NF, $0}' | sort -n | head -n1 | awk '{print $6}')
+
+wifi_link_info=$(iw dev wlp2s0 link)
+wifi_con=$(echo "$wifi_link_info" | awk -F': ' '/SSID:/ {print $2}' | xargs -0 printf "%b")
+wifi_freq=$(echo "$wifi_link_info" | awk '/freq:/ {print int($2)}')
+if [ "$wifi_freq" -le 2484 ]; then
+    wifi_channel=$(( (wifi_freq - 2407) / 5 ))
+    wifi_band="2.4GHz"
+elif [ "$wifi_freq" -lt 5950 ]; then
+    wifi_channel=$(( (wifi_freq - 5000) / 5 ))
+    wifi_band="5GHz"
+else
+    wifi_channel=$(( (wifi_freq - 5950) / 5 ))
+    wifi_band="6GHz"
+fi
+dbm=$(echo "$wifi_link_info" | awk '/signal:/ {d=$(NF-1)+0; q=2*(d+100); q=(q>100)?100:(q<0)?0:q; print q"% ("d")"; exit}')
+if [[ "$dev_interface" == "wlp2s0" ]]; then
+    wifi="  ${wifi_con:-Offline}\n - @${wifi_band}(${wifi_channel}Ch):$dbm"
+else
+    wifi=""
+fi
+
+
+private_ip=$(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v "127.0.0.1")
+
+route_interface=$(ip route get 1.1.1.1 | awk '{print $5}')
+ip_address=$(while read -r iface ip_cidr; do
+	ip_addr="${ip_cidr%%/*}"
+	if [[ $iface == ${route_interface} ]]; then
+		public_ip=$(curl -s --max-time 2 https://checkip.amazonaws.com || \
+                        curl -s --max-time 2 https://1.1.1.1/cdn-cgi/trace | awk -F= '/ip=/{print $2}')
+		echo "${ip_addr} - ${public_ip} 󰩠 ${iface}"
+	else
+		echo "${ip_addr} 󰩠 ${iface}"
+	fi
+done < <(ip -o -4 addr show scope global | awk '{print $2, $4}'))
+
+[[ -z "$ip_address" ]] && unset ip_address
+
+if [[ $(systemctl is-active shellcrash) == "active" ]]; then
+    external_url="http://127.0.0.1:9999"
+    current_mode=$(curl -s -X GET "$external_url/configs" | jq -r '.mode')
+    #current_node_global=$(curl -s -X GET "$external_url/proxies/GLOBAL" | jq -r '.now')
+    #encoded_cur=$(jq -rn --arg x "$current_node_global" '$x|@uri')
+    #test_url="http://www.gstatic.com/generate_204"
+    #ping_val=$(curl -s -X GET "$external_url/proxies/$encoded_cur/delay?url=$test_url&timeout=5000" | jq -r '.delay // empty')
+	proxy="󰖂 (clash) - $current_mode"
+else
+	proxy=""
+fi
+
+rx_1=$(cat /sys/class/net/"$dev_interface"/statistics/rx_bytes)
+tx_1=$(cat /sys/class/net/"$dev_interface"/statistics/tx_bytes)
+sleep 0.1
+rx_2=$(cat /sys/class/net/"$dev_interface"/statistics/rx_bytes)
+tx_2=$(cat /sys/class/net/"$dev_interface"/statistics/tx_bytes)
+net_speed=$(awk -v r=$(((rx_2-rx_1)*10)) -v t=$(((tx_2-tx_1)*10)) 'BEGIN {
+    split("B/s KiB/s MiB/s GiB/s", u);
+    while(r>=1024&&ir<3){r/=1024;ir++} while(t>=1024&&it<3){t/=1024;it++}
+    printf "↓ %0.1f %s  ↑ %0.1f %s\n", r, u[ir+1], t, u[it+1]
+}')
+
+net_traffic_m=$(vnstat --iface "$dev_interface" -m --oneline | awk -F';' '{print " " $9 "   " $10}')
+
+battery_charge_limit="󱟠$(asusctl battery info | awk -F ': ' '{print $2}')"
+
+battery_health="$(awk 'NR==FNR {ef=$1; next} {printf "󱈏 %.2f%%\n", (ef/$1)*100}' /sys/class/power_supply/BAT0/energy_full /sys/class/power_supply/BAT0/energy_full_design)"
+
+
+
+fan_speed=$(sensors asus-isa-000a | awk '/cpu_fan/ {cpu=$2 $3} /gpu_fan/ {gpu=$2 $3} END {print "󰈐 (c): " cpu " 󰈐 (g): " gpu}')
+
+mpris=$(/home/hl/.config/polybar/mpris "status")
+
+up_state="$(uptime -p)"
+
+wake_str=$(journalctl -b -u sleep.target | grep "Stopped" | tail -1 | awk '{print $1,$2,$3}')
+if [[ -z "$wake_str" ]];then
+    wake_epoch=$(uptime -s | xargs -I {} date -d "{}" +%s)
+else
+    wake_epoch=$(date -d "$wake_str" +%s)
+fi
+now_epoch=$(date +%s)
+seconds_diff=$((now_epoch - wake_epoch))
+up_sleep_state=$(printf "up last sleep: %02d:%02d:%02d\n" \
+	$((seconds_diff / 3600)) \
+	$(((seconds_diff % 3600) / 60)) \
+	$((seconds_diff % 60)))
+
+# connected android
+android_kdeconnected=$(kdeconnect-cli -a 2>/dev/null | awk '
+/paired and reachable/ {
+    match($0, /^- ([^:]+):/, name_match);
+    name = name_match[1];
+    match($0, / on ([0-9.]+)/, ip_match);
+    ip = ip_match[1];
+    match($0, / via ([A-Za-z0-9_]+)/, via_match);
+    via = via_match[1];
+    printf " %s (%s) - %s\n", name, ip, via;
+}'
+)
+
+android_serials=$(adb devices | grep -v "List" | awk '{print $1}' | grep .)
+if [[ -z "$android_serials" ]]; then
+	android_adbconnected=""
+else
+	android_adbconnected=""
+	for serial in $android_serials; do
+		model=$(adb -s "$serial" shell getprop ro.product.model)
+		battery_info=$(adb -s "$serial" shell dumpsys battery)
+		uptime=$(adb -s "$serial" shell uptime | grep -oP 'up \K.*?(?=, +\d+ user)')
+
+		level=$(echo "$battery_info" | grep "level" | awk '{print $2}')
+		status_code=$(echo "$battery_info" | grep "status" | awk '{print $2}')
+		temp_raw=$(echo "$battery_info" | grep "temperature" | awk '{print $2}')
+
+		case $status_code in
+		2) charging="Charging" ;;
+		3) charging="Discharging" ;;
+		4) charging="Not Charging" ;;
+		5) charging="Full" ;;
+		*) charging="Unknown" ;;
+		esac
+
+        device_volume="$(for s in "3: " "2:󱆬 " "0: "; do id="${s%%:*}"; name="${s#*:}"; adb shell cmd media_session volume --stream $id --get | awk -v n="$name" '{if(match($0, /volume is ([0-9]+)/, v) && match($0, /\.\.([0-9]+)/, m)) printf "%s%d/%d  ", n, v[1], m[1]}'; done | sed 's/ | $/\n/'
+)"
+		device_str=" $model ($serial)\n  $level% ($charging)  $((temp_raw / 10))°C\n  $device_volume\n  up: $uptime"
+		android_adbconnected="${android_adbconnected:+$android_adbconnected\n\n}$device_str"
+	done
+fi
+
+android_device="$android_kdeconnected"
+android_device+="${android_device:+$'\n'}$android_adbconnected"
+
+hr=$(printf '═%.0s' {1..40})
+hr1=$(printf '─%.0s' {1..40})
+
+dunstify "$date $desktop $capslock" -a "system_status" -u critical \
+	-h string:bgcolor:#000000 -h string:fgcolor:#FFFFFF -h string:frcolor:#FFFFFF \
+	-h int:timeout:0 \
+	-h string:x-dunst-stack-tag:sys_status \
+	"<u>$xwindow</u> $node_flags\
+\r\
+\r$powerprofile $battery_level$battery_stats - $battery_charge_limit $battery_health\
+\r$volume $headset $mic $brightness\
+\r$temperature     $fan_speed\
+${bluetooth_devices:+\r\r$bluetooth_devices}\
+\r\
+${wifi:+\r$wifi}\
+${ip_address:+\r$ip_address}\
+${proxy:+\r$proxy}\
+\r$net_speed\
+\r$net_traffic_m\
+\r\
+\r$global_cpu_usage (global) - $cpu_freq\
+\r$cpu_usage\
+\r\
+\r$igpu_usage\
+\r$egpu_usage\
+\r\
+\r$memory_usage\
+\r$disk_home $disk_boot\
+\r\
+\r$up_state\
+\r$up_sleep_state\
+${mpris:+\r\r$mpris}\
+${android_device:+\r\r$android_device}"

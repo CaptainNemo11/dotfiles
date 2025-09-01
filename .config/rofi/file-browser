@@ -1,0 +1,12 @@
+cmd        "zathura"
+oc-cmd     "google-chrome-stable;icon:google-chrome;name:chrome"
+oc-cmd     "okular;icon:okular;name:okular"
+oc-cmd     "xchm;icon:xchm;name:xchm"
+oc-cmd     "zathura;icon:org.pwmt.zathura;name:zathura"
+oc-cmd     "adb_push_sync.sh;icon:xsi-emblem-synchronizing-symbolic;name:AdbSync Pdf"
+oc-cmd
+depth      1
+open-custom-key         "kb-accept-alt"
+open-multi-key          "none"
+open-hidden-key         "none"
+

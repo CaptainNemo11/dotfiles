@@ -1,0 +1,255 @@
+#
+# wm independent hotkeys
+#
+
+# terminal emulator
+super + q
+	kitty
+
+# program launcher
+super + space
+    rofi -show drun
+super + Tab
+    rofi -show window -selected-row 1 -theme-str 'listview\{fixed-height: false;\}' -no-fixed-num-lines
+# make sxhkd reload its configuration files:
+#super + Escape
+#	pkill -USR1 -x sxhkd
+
+#resetup monitors and start wm
+super + F1
+    bspc wm -r
+alt + F10
+    /home/hl/.config/polybar/status
+F10
+    /home/hl/.config/polybar/status date
+
+#
+# bspwm hotkeys
+#
+
+# quit/restart bspwm
+#super + alt + {q,r}
+#	bspc {quit,wm -r}
+
+# close and kill
+super + x
+	bspc node -c
+
+#safe close
+#super + x
+#  active_id=$(xdotool getactivewindow 2>/dev/null); \
+#  active_class=$(xprop -id "$active_id" WM_CLASS | awk -F '"' '\{print $4\}'); \
+#  case "$active_class" in \
+#  "Emacs"|"Google-chrome"|"org.mozilla.Thunderbird"|"Code") \
+#  xdotool windowclose "$active_id"; ;; \
+#  *) bspc node -c; ;; \
+#  esac
+
+# alternate between the tiled and monocle layout
+super + w
+	bspc desktop -l next
+
+# swap the current node and the biggest window
+#super + g
+#	bspc node -s biggest.window
+
+#
+# state/flags
+#
+
+# set the window state
+#super + {t,shift + t,f,z}
+#	bspc node -t {\~tiled,\~pseudo_tiled,\~floating,\~fullscreen}
+super + f
+    bspc node -t \~floating
+super + z
+    bspc node -t \~fullscreen
+F11
+    bspc node -t \~fullscreen
+
+#
+# focus/swap
+#
+
+# focus the node in the given direction
+super + {_,shift + }{h,j,k,l}
+	bspc node -{f,s} {west,south,north,east}
+
+# focus the node for the given path jump
+#super + {p,b,comma,period}
+#	bspc node -f @{parent,brother,first,second}
+
+# focus the next/previous window in the current desktop
+super + {bracketleft,bracketright}
+	bspc node -f {prev,next}.local.!hidden.window
+#
+## focus the next/previous desktop in the current monitor
+#super + bracket{left,right}
+#	bspc desktop -f {prev,next}.local
+
+# focus the last monitor/desktop(current monitor)
+alt + Escape
+	bspc monitor -f last
+alt + grave
+    bspc  node -f last.local
+alt + Tab
+    bspc desktop -f last.local
+
+
+# focus the older or newer node in the focus history
+#super + {o,i}
+#	bspc wm -h off; \
+#	bspc node {older,newer} -f; \
+#	bspc wm -h on
+
+# focus or send to the given desktop
+#super + {_,shift + }{1-9,0}
+#	bspc {desktop -f,node -d} '^{1-9,10}'
+
+
+# focus desktop on current monitor
+super + {1-9,0}
+    bspc desktop -f focused:'^{1-9,0}'
+super + shift + {1-9,0}
+    bspc node -d focused:'^{1-9,0}' --follow
+
+# focus desktop on next monitor
+alt + {1-9,0}
+    bspc desktop -f next:'^{1-9,0}'
+alt + shift + {1-9,0}
+    bspc node -d next:'^{1-9,0}' --follow
+
+
+
+#button7
+#    bspc desktop -f next.local
+#button6
+#    bspc desktop -f prev.local
+
+
+# set the node flags
+super + ctrl + {m,x,s,p}
+	bspc node -g {marked,locked,sticky,private}
+
+#
+# preselect
+#
+
+# preselect the direction
+super + ctrl + {h,j,k,l}
+	bspc node -p {west,south,north,east}
+
+# preselect the ratio
+super + ctrl + {1-9}
+	bspc node -o 0.{1-9}
+
+# cancel the preselection for the focused node
+super + ctrl + space
+	bspc node -p cancel
+
+# send the newest marked node to the newest preselected node
+super + ctrl + y
+	bspc node newest.marked.local -n newest.!automatic.local
+# swap the newest mark node to the focused node
+super + ctrl + w
+    bspc node -s newest.marked.local
+
+# cancel the preselection for the focused desktop
+super + ctrl + shift + space
+	bspc query -N -d | xargs -I id -n 1 bspc node id -p cancel
+
+#
+# move/resize
+#
+
+# expand a window by moving one of its side outward
+alt + {h,j,k,l}
+	bspc node -z {left -20 0,bottom 0 20,top 0 -20,right 20 0}
+
+# contract a window by moving one of its side inward
+alt + shift + {h,j,k,l}
+	bspc node -z {right -20 0,top 0 20,bottom 0 -20,left 20 0}
+
+# move a floating window
+super + {Left,Down,Up,Right}
+	bspc node -v {-20 0,0 20,0 -20,20 0}
+
+#rotate
+super + p
+    bspc node '@parent' -R 90
+
+#media
+
+
+XF86AudioRaiseVolume
+    pactl set-sink-volume @DEFAULT_SINK@ +5% 
+XF86AudioLowerVolume 
+    pactl set-sink-volume @DEFAULT_SINK@ -5% 
+XF86AudioMute 
+    pactl set-sink-mute @DEFAULT_SINK@ toggle
+XF86AudioMicMute 
+    pactl set-source-mute @DEFAULT_SOURCE@ toggle 
+
+XF86AudioPlay
+    playerctl -p playerctld play-pause
+XF86AudioPrev
+    playerctl -p playerctld previous
+XF86AudioNext
+    playerctl -p playerctld next
+
+XF86MonBrightnessUp 
+    brightnessctl set 10%+
+XF86MonBrightnessDown 
+    brightnessctl set 10%-
+XF86KbdBrightnessUp
+    brightnessctl -d 'asus::kbd_backlight' set +33%
+XF86KbdBrightnessDown
+    brightnessctl -d 'asus::kbd_backlight' set 33%-
+XF86Launch1
+    rog-control-center
+XF86Launch4
+    asusctl profile -n
+
+
+# apps
+
+super + v
+    rofi -modi "clipboard:greenclip print" -show clipboard
+super + c
+    code
+super + g
+    google-chrome-stable
+super + a
+    if emacsclient -e 't' >/dev/null 2>&1; then emacsclient -c -n; else emacs; fi
+super + shift + a
+    emacs
+super + i
+    thunderbird 
+super + e
+    dolphin
+#super + b
+#    chromium 
+super + r
+    rofi -show file-browser-extended -file-browser-dir ~/Book
+super + t
+    rofi -show file-browser-extended -file-browser-dir ~/Article
+super + d
+    goldendict 
+super + s
+    flameshot gui
+super + m
+    ~/.config/polybar/quickmemo
+super + n
+    ~/.config/polybar/quicknote
+F12
+    find-cursor -c "#444444"
+
+#system
+super + Delete
+    if [ $(dunstctl count displayed) -gt 0 ];then \
+       dunstctl close-all; \
+    else \
+       ~/.config/polybar/menu; \
+    fi
+Menu
+    rofi -show menu -modi "menu:~/.config/rofi/power" -theme ~/.config/rofi/power.rasi
