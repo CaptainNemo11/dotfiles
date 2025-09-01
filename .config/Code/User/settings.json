@@ -1,0 +1,57 @@
+{
+    "window.restoreWindows": "none",
+    "vim.handleKeys": {
+        "<C-p>": false,
+        "<C-c>": false,
+        "<C-v>": true
+    },
+    "keyboard.dispatch": "keyCode",
+    "vim.vimrc.enable": true,
+    "editor.lineNumbers": "relative",
+    "workbench.startupEditor": "none",
+    "cmake.showOptionsMovedNotification": false,
+    "workbench.editorAssociations": {
+        "{git,gitlens}:/**/*.{md,csv,svg}": "default"
+    },
+    "digital-ide.welcome.show": false,
+    "workbench.activityBar.location": "bottom",
+    "hediet.vscode-drawio.resizeImages": null,
+    "vim.useSystemClipboard": true,
+    "editor.wordWrap": "wordWrapColumn",
+    "editor.wordWrapColumn": 80,
+    "cmake.pinnedCommands": [
+        "workbench.action.tasks.configureTaskRunner",
+        "workbench.action.tasks.runTask"
+    ],
+    "editor.fontFamily": "'Droid Sans Mono', 'monospace', monospace, 'JetBrainsMono Nerd Font'",
+    "python.terminal.shellIntegration.enabled": true,
+    "window.titleBarStyle": "custom",
+    "diffEditor.maxComputationTime": 0,
+    "editor.acceptSuggestionOnEnter": "smart",
+    "editor.tabCompletion": "off",
+    "editor.inlineSuggest.suppressSuggestions": true,
+    "editor.suggest.selectionMode": "never",
+    "editor.defaultFormatter": "xaver.clang-format",
+    "editor.formatOnSave": true,
+    "workbench.colorTheme": "Solarized Light",
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "cmake.configureOnOpen": false,
+    "[cpp]": {
+        "editor.stickyScroll.defaultModel": "outlineModel",
+    },
+    "[c]": {
+        "editor.stickyScroll.defaultModel": "outlineModel",
+    },
+    "[cuda-cpp]": {
+        "editor.stickyScroll.defaultModel": "outlineModel",
+    },
+    "[shellscript]": {
+        "editor.defaultFormatter": "foxundermoon.shell-format"
+    },
+    "remote.SSH.connectTimeout": 120,
+    "update.mode": "none",
+    "remote.SSH.enableDynamicForwarding": false,
+    "redhat.telemetry.enabled": true,
+    "terminal.integrated.defaultLocation": "editor",
+    "diffviewer.outputFormat": "side-by-side",
+}

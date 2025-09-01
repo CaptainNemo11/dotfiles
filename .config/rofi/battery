@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+LOCATION=3
+Y_AXIS=30
+X_AXIS=5
+THEME="network.rasi"
+RASI_DIR="$HOME/.config/rofi/${THEME}"
+PROMPT_COLOR="#ffffff"       
+PROMPT_BG="#000000"         
+
+#A charging limit of 75 is suitable for a laptop that is unplugged often. 60 is a good value for one that is left plugged in most of the time
+b_set() {
+  PROMPT="set battery charge limit"
+    
+  number=$(rofi -dmenu -i -location "$LOCATION" -yoffset "$Y_AXIS" -xoffset "$X_AXIS" \
+        -theme "$RASI_DIR" \
+        -theme-str 'window{width: 15em;}
+                    textbox-prompt-colon{str:"'"$PROMPT"':"; background-color: '"$PROMPT_BG"'; text-color: '"$PROMPT_COLOR"';}')
+    
+  [[ -n "$number" ]] && asusctl battery limit "$number" && dunstify "Battery Charge Limit Set" "$(asusctl battery info)" -a "system_status" -i "/usr/share/icons/breeze/status/64/dialog-information.svg" -u normal
+}
+
+b_stat() {
+   battery_time="$(acpi -b | awk -F', ' '{print $3}')"
+   battery_info="$(asusctl battery info)"
+   if [[ -n $battery_time ]];then
+       battery_info="${battery_info}\n${battery_time}"
+   fi
+   dunstify "battery $(cat /sys/class/power_supply/BAT0/capacity)% $(cat /sys/class/power_supply/BAT0/status)"  "$battery_info" -a "system_status" -i "/usr/share/icons/breeze/status/24/battery-full-charging.svg"  -u normal
+}
+
+if [[ "$1" == "set" ]];then
+  b_set
+elif [[ $1 == "stat" ]];then
+  b_stat
+fi
+

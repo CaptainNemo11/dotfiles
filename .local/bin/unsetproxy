@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+unset http_proxy https_proxy all_proxy ftp_proxy

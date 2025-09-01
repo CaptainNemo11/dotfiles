@@ -1,0 +1,86 @@
+#!/bin/bash
+
+
+urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
+
+
+extract_meta() {
+    grep "$1\W" <<< "$meta" | awk '{$1=$2=""; print $0}' | sed 's/^ *//; s/; */;/g' | paste -s -d/ -
+}
+
+
+get_info() {
+     meta=$(playerctl -p "$1" metadata 2> /dev/null) 
+
+    # get title
+    title=$(extract_meta title)
+    # if no title, try url e.g. vlc
+    if [ -z "$title" ]; then
+        title=$(extract_meta url)
+        title=$(urldecode "${title##*/}")
+    fi
+
+    # get artist
+    artist=$(extract_meta artist)
+
+    # get album
+    album=$(extract_meta album)
+
+    case "$1" in
+        spotify*) echo -n " ";;
+        kdeconnect*) echo -n " ";;
+        chromium*) echo -n " ";;
+        firefox*) echo -n " ";;
+        vlc*) echo -n "󰕼 ";;
+        kasts*) echo -n "󰦔 ";;
+        mpv*) echo -n "󰐹 ";;
+        mopidy*) echo -n " ";;
+        plasma-browser-integration*)echo -n " ";; #echo -n " ";;
+        *) echo -n " ";;
+    esac
+}
+
+player=$(playerctl -l 2> /dev/null | head -n 1  )
+[[ -z "$player" ]] && exit 0 
+p_status=$(playerctl -p "$player" status 2>/dev/null)
+if [[ "$player" == "plasma-browser-integration" ]]; then exit 0; fi
+if [[ "$p_status" = "Stopped" ]]; then exit 0; fi
+
+
+get_info "$player"
+
+
+
+echo_track(){
+  if [[ ! -z "$1" ]];then
+    case "$p_status" in
+      Playing) echo -n "     ";;
+      Paused) echo -n "     ";;
+#      Stoped) echo -n "  ";;
+      *)
+    esac
+    echo $(playerctl -p "$player" metadata --format '{{ duration(position) }} / {{ duration(mpris:length) }}')
+      [[ ! -z "$artist" ]] && echo "󰠃 $artist"
+      [[ ! -z "$album" ]] && echo "󰀥 $album"
+      [[ ! -z "$title" ]] && echo " $title"
+  else
+      [[ ! -z "$artist" ]] && echo -n "$artist" "- " 
+      #[[ "$player" == "kasts" && ! -z "$album" ]] && echo -n "$album" "- "
+      echo "$title"
+
+  fi
+    
+}
+
+if [[ -z "$1" ]]; then
+  case "$p_status" in
+      Playing);;
+      Paused)
+          echo_track
+          ;;
+      *);;
+  esac
+else
+    echo_track  1
+fi
+
