@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+DOTS_DIR="$HOME/.dots"
+SYSDOTS_DIR="$HOME/.sysdots"
+dots() {
+    git --git-dir="$DOTS_DIR" --work-tree="$HOME" "$@"
+}
+
+sysdots() {
+    sudo -E git --git-dir="$SYSDOTS_DIR" --work-tree=/etc "$@"
+}
+
+help() {
+    cat << EOF
+Usage: dotsync <user|sys> [init <url>]
+EOF
+}
+
+
+userbranch="archx"
+sysbranch="etc"
+initdots(){
+    remote_url="$2"
+    if [[ "$1" == "user" ]];then
+        git clone --bare --branch "$userbranch" "$remote_url"  "$DOTS_DIR"
+    elif [[ "$1" == "sys" ]];then
+        git clone --bare --branch "$sysbranch" "$remote_url"  "$SYSDOTS_DIR"
+    fi
+    $gitcommand co 
+    $gitcommand config status.showUntrackedFiles no
+    if [[ "$1" == "user" ]];then
+        dots config commit.gpgsign true
+        dots config format.signoff true
+        dots update-index --skip-worktree ~/.config/golendict/config
+        dots update-index --skip-worktree ~/.config/fcitx5/conf/chttrans.conf
+        dots update-index --skip-worktree ~/.config/fcitx5/profile
+    elif [[ "$1" == "sys" ]];then
+        sysdots config format.signoff true
+        sysdots config core.sshCommand "ssh -i $HOME/.ssh/id_rsa"
+    fi
+}
+
+syncdots(){
+    $gitcommand st
+
+    $gitcommand add -u
+
+    $gitcommand st
+    #if [[ "$gitcommand" == "sysdots" && -n "$INSIDE_EMACS" ]]; then
+    #    printf "\e[1;31merror in emacs's term, please only in kitty\e[0m\n"
+    #    exit 0
+    #fi
+
+
+    AUTHOR_DATE="$($gitcommand log -n 1 --format=%aD)"
+    COMMITTER_DATE="$($gitcommand log -n 1 --format=%cD)"
+    #GPG_TTY=$(tty) 
+    GIT_AUTHOR_DATE="$AUTHOR_DATE" GIT_COMMITTER_DATE="$COMMITTER_DATE" $gitcommand commit --amend --no-edit --quiet
+
+    $gitcommand st
+
+    $gitcommand push -f
+
+    $gitcommand st
+}
+
+
+
+if [[ -z "$1" || "$1" == "-h" || "$1" == "--help" ]]; then
+    help
+    exit 0
+elif [[ "$1" == "user" ]]; then
+    set -x
+    gitcommand="dots"
+    set +x
+    if [[ "$2" == "init" ]]; then
+        set -x
+        initdots "user" "$3"
+    else
+        set -x
+        syncdots
+    fi
+elif [[ "$1" == "sys" ]]; then
+    set -x
+    gitcommand="sysdots"
+    set +x
+    if [[ "$2" == "init" ]]; then
+        set -x
+        initdots "sys" "$3"
+    else
+        set -x
+        syncdots
+    fi
+fi
