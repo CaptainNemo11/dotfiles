@@ -1,0 +1,163 @@
+#!/bin/env bash
+
+OPTIONS="Notifications"
+OPTIONS="$OPTIONS\nRunAt"
+OPTIONS="$OPTIONS\nTimer"
+
+
+#OPTIONS="$OPTIONS\nKde Send Notification"
+#OPTIONS="$OPTIONS\nKde Send quickmemo"
+
+OPTIONS="$OPTIONS\nWireless Settings"
+
+OPTIONS="$OPTIONS\nStatus"
+
+
+LOCATION=3
+Y_AXIS=30
+X_AXIS=0
+THEME="network.rasi"
+RASI_DIR="$HOME/.config/rofi/${THEME}"
+WIDTH_FIX=1
+
+function rofi_cmd() {
+	WIDTH=$(echo -e "$1" | awk '{print length}' | sort -n | tail -1)
+	((WIDTH += WIDTH_FIX))
+	((WIDTH = WIDTH / 2))
+	rofi -dmenu -i -location "$LOCATION" -yoffset "$Y_AXIS" -xoffset "$X_AXIS" \
+		-theme "$RASI_DIR" -theme-str 'window{width: '"$WIDTH"'em;}textbox-prompt-colon{str:"'"$PROMPT"':";}'
+}
+
+function rofi_cmd_0() {
+	rofi -dmenu -i \
+		-location "$LOCATION" -yoffset "$Y_AXIS" -xoffset "$X_AXIS" \
+		-theme "$RASI_DIR" -theme-str 'textbox-prompt-colon{str:"'"$1"'";}'
+}
+
+function rofi_cmd_1() {
+	rofi -dmenu -i \
+		-location "$LOCATION" -yoffset "$Y_AXIS" -xoffset "$X_AXIS" \
+		-theme "$RASI_DIR" -theme-str 'entry{placeholder: "'"$1"'";}listview{enabled:false;}'
+}
+
+CHOSEN=$(echo -e "$OPTIONS" | rofi_cmd "$OPTIONS")
+
+case "$CHOSEN" in
+"Kde Send Notification")
+	sleep 0.1
+	msg=$(rofi_cmd_1 "message")
+	#-no-show-icons -lines 0 -no-fixed-num-lines)
+	if [ -n "$msg" ]; then
+		kdeconnect-cli -n "$MY_PHONE_NAME" --ping-msg "${msg}"
+	fi
+	;;
+"Notifications")
+	sleep 0.1
+	NOW=$(date +%s)
+	UPTIME=$(awk '{print $1}' /proc/uptime | cut -d. -f1)
+	CLEAR_STR="~Clear All Notifications~"
+	NOTIF_HISTORY+=$(dunstctl history | jq -r --arg now "$NOW" --arg uptime "$UPTIME" ' .data[][] | (($now | tonumber) - (($uptime | tonumber) - (.timestamp.data / 1000000)) | strflocaltime("%H:%M")) + "│ " + (.summary.data | gsub("\n"; " "))+ ": " + (.body.data | gsub("\n"; " "))')
+	#NOTIF_HISTORY=$(dunstctl history | jq -r '.data[][] | "\(.summary.data): \(.body.data)"')
+	if [[ -n "$NOTIF_HISTORY" ]]; then
+		chosen_noti=$(echo -e "$CLEAR_STR\n$NOTIF_HISTORY" | rofi_cmd_0 "Notifications: ")
+		if [[ "$chosen_noti" == "$CLEAR_STR" ]]; then
+			dunstctl history-clear
+		else
+			echo -n "${chosen_noti#*│}" | xclip -selection clipboard
+		fi
+	fi
+	;;
+"Kde Send quickmemo")
+	files=()
+	[[ -s /tmp/.quickmemo ]] && files+=(/tmp/.quickmemo)
+	[[ -s /tmp/.quicknote ]] && files+=(/tmp/.quicknote)
+	if [[ "${#files[@]}" -gt 0 ]]; then
+	file_content=$(cat "${files[@]}")
+		kdeconnect-cli -n "$MY_PHONE_NAME" --share-text "$file_content"
+		kdeconnect-cli -n "$MY_PHONE_NAME" --ping-msg "$file_content"
+        kdeconnect-cli -n "$MY_PHONE_NAME" --ping-msg "$(date +%H:%M) shared memo <Remember to PIN in 1 hour>"
+	fi
+	;;
+"RunAt")
+    sleep 0.1
+	to_run_command=$(rofi_cmd_1 "command to run" )
+	if [[ ! -n $to_run_command ]]; then
+		exit 0
+	fi
+    sleep 0.1
+	to_run_time=$(rofi_cmd_1 "HHMM | now + \$num {minutes, hours, days} | HH:MM | {midnight,noon,teatime}")
+    status=$?
+    if [[ $status -ne 0 ]]; then
+        exit 0
+	elif [[ -z $to_run_time ]]; then
+		echo "[ Instant ] atJob START: $to_run_command" >>/tmp/atlog
+		eval "$to_run_command" >>/tmp/atlog 2>&1
+		echo "[ Instant ] atJob END" >>/tmp/atlog
+		echo "------------------------------------" >>/tmp/atlog
+	else
+		{
+			echo "{ 
+            echo \"[ \$(date '+%Y-%m-%d %H:%M:%S') ] atJob START: $to_run_command\"; 
+            $to_run_command; 
+            echo \"[ \$(date '+%Y-%m-%d %H:%M:%S') ] atJob END\";
+            echo \"------------------------------------\"; 
+        } >> /tmp/atlog 2>&1" | at "$to_run_time"
+		} >>/tmp/atlog 2>&1 && dunstify -a "system_status" "RunAt"  -t 1000 -i /usr/share/icons/breeze/actions/24/new-command-alarm.svg  
+
+	fi
+	;;
+"Timer")
+    sleep 0.1
+	duration=$(rofi_cmd_1 "Duration(\$num {s,m,h,d}) -b(to beep)")
+	if [[ -n "$duration" ]]; then
+        if [[ "$duration" == *-b ]];then
+            enable_beep=true
+            duration="${duration%-b}"
+        fi
+		(
+            duration=$(echo "$duration" | xargs)
+            start_time=$(date +%s)
+            (exec -a "timer_sleep" sleep "$duration")
+            end_time=$(date +%s)
+            elapsed_seconds=$((end_time - start_time))
+            human_time=$(date -d@$elapsed_seconds -u +%-H:%-M:%-S)
+            if [[ -n "$enable_beep" ]]; then
+                pkill -f "timer_alarm_sounds" 2>/dev/null
+                (
+                    exec -a "timer_alarm_sounds" bash -c '
+                    while true; do
+                        paplay /usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga
+                    done'
+                ) &
+                action=$(dunstify -u critical -a "system_status" "!! Times up  !!" "<i><span size='xx-large'>$human_time</span></i>" -i /usr/share/icons/hicolor/scalable/apps/org.kde.kclock.svg -h int:value:100 -A "silence_alarm, Slience Alarm")
+                if [[ "$action" == "silence_alarm" ]];then
+                    pkill -f "timer_alarm_sounds"
+                fi
+            else
+                dunstify -u critical -a "system_status" "!! Times up  !!" "<i><span size='xx-large'>$human_time</span></i>" -i /usr/share/icons/hicolor/scalable/apps/org.kde.kclock.svg -h int:value:100
+            fi
+		) &
+	else
+		exit 0
+	fi
+	dunstify -a "system_status" "Timer" "<i>Setup in $duration</i>" -i /usr/share/icons/breeze/actions/24/clock.svg -t 1000
+	;;
+"Wireless Settings")
+    wireless_option="Network\nBluetooth"
+    sleep 0.1
+    wireless_chosen=$(echo -e $wireless_option | rofi_cmd $wireless_option)
+    case $wireless_chosen in
+        "Network")
+            sleep 0.1
+            ~/.config/rofi/network
+            ;;
+        "Bluetooth")
+            sleep 0.1
+            ~/.config/rofi/bluetooth
+            ;;
+    esac
+    ;;
+"Status")
+    ~/.config/polybar/status
+    ;;
+esac
